@@ -1,0 +1,1285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>WH Gate Register</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=DM+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/tesseract.js@v2.1.0/dist/tesseract.min.js"></script>
+<style>
+:root {
+  --bg: #080d18;
+  --surface: #0f1623;
+  --card: #161e30;
+  --card-hover: #1e2a42;
+  --accent: #c8df20;
+  --accent-dim: rgba(200,223,32,0.12);
+  --text: #f0f4ff;
+  --text-muted: #5a6a8a;
+  --text-sub: #8a9bbb;
+  --border: #1e2a42;
+  --border-bright: #2e3e5e;
+  --danger: #ff4757;
+  --success: #2ed573;
+  --font-head: 'Rajdhani', sans-serif;
+  --font-data: 'IBM Plex Mono', monospace;
+  --font-body: 'DM Sans', sans-serif;
+  --radius: 14px;
+  --radius-sm: 8px;
+  --shadow: 0 4px 24px rgba(0,0,0,0.5);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  overflow: hidden;
+}
+
+/* ── SCREENS ─────────────────────────────── */
+.screen {
+  position: fixed; inset: 0;
+  display: flex; flex-direction: column;
+  opacity: 0; pointer-events: none;
+  transform: translateX(30px);
+  transition: opacity 0.22s ease, transform 0.22s ease;
+  overflow-y: auto;
+  background: var(--bg);
+}
+.screen.active {
+  opacity: 1; pointer-events: all; transform: translateX(0);
+}
+.screen.slide-out {
+  opacity: 0; transform: translateX(-30px);
+}
+
+/* ── HEADER ─────────────────────────────── */
+.hdr {
+  display: flex; align-items: center; gap: 12px;
+  padding: 16px 20px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  position: sticky; top: 0; z-index: 10;
+}
+.hdr-title {
+  font-family: var(--font-head);
+  font-size: 22px; font-weight: 700;
+  letter-spacing: 0.04em;
+  flex: 1;
+}
+.btn-back {
+  background: var(--card); border: 1px solid var(--border-bright);
+  color: var(--text); width: 44px; height: 44px;
+  border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; cursor: pointer; flex-shrink: 0;
+  transition: background 0.15s;
+}
+.btn-back:active { background: var(--card-hover); }
+
+/* ── HOME SCREEN ─────────────────────────── */
+#screen-home {
+  justify-content: flex-start;
+}
+.home-hero {
+  padding: 48px 24px 32px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.home-logo {
+  width: 64px; height: 64px;
+  background: var(--accent);
+  border-radius: 18px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 32px; margin: 0 auto 20px;
+  box-shadow: 0 0 40px rgba(200,223,32,0.25);
+}
+.home-title {
+  font-family: var(--font-head);
+  font-size: 36px; font-weight: 700;
+  letter-spacing: 0.05em;
+  line-height: 1;
+}
+.home-subtitle {
+  font-size: 13px; color: var(--text-muted);
+  margin-top: 8px; letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-family: var(--font-data);
+}
+.home-cards {
+  padding: 0 20px 32px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.wh-card {
+  background: var(--card);
+  border: 1.5px solid var(--border-bright);
+  border-radius: var(--radius);
+  padding: 24px 22px;
+  cursor: pointer;
+  display: flex; align-items: center; gap: 18px;
+  transition: all 0.18s ease;
+  position: relative; overflow: hidden;
+  min-height: 88px;
+}
+.wh-card::before {
+  content: '';
+  position: absolute; left: 0; top: 0; bottom: 0;
+  width: 4px;
+  background: var(--accent);
+  opacity: 0;
+  transition: opacity 0.18s;
+}
+.wh-card:not(.disabled):active { background: var(--card-hover); transform: scale(0.98); }
+.wh-card:not(.disabled):active::before { opacity: 1; }
+.wh-card.disabled { opacity: 0.4; cursor: default; }
+.wh-icon {
+  font-size: 36px; flex-shrink: 0; width: 52px; text-align: center;
+}
+.wh-info { flex: 1; }
+.wh-name {
+  font-family: var(--font-head);
+  font-size: 26px; font-weight: 700;
+  letter-spacing: 0.06em;
+}
+.wh-desc { font-size: 13px; color: var(--text-sub); margin-top: 2px; }
+.badge-soon {
+  background: var(--text-muted);
+  color: var(--bg);
+  font-family: var(--font-data);
+  font-size: 9px; font-weight: 600;
+  padding: 3px 8px; border-radius: 20px;
+  letter-spacing: 0.1em; text-transform: uppercase;
+}
+.wh-arrow {
+  font-size: 22px; color: var(--accent); flex-shrink: 0;
+}
+
+/* ── PIN SCREEN ─────────────────────────── */
+.pin-wrap {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; padding: 32px 24px 24px;
+  gap: 32px;
+}
+.pin-warehouse-label {
+  font-family: var(--font-head);
+  font-size: 16px; letter-spacing: 0.15em;
+  text-transform: uppercase; color: var(--text-muted);
+}
+.pin-warehouse-name {
+  font-family: var(--font-head);
+  font-size: 32px; font-weight: 700;
+  letter-spacing: 0.05em; margin-top: 4px;
+}
+.pin-dots {
+  display: flex; gap: 18px;
+}
+.pin-dot {
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  border: 2px solid var(--border-bright);
+  background: transparent;
+  transition: all 0.15s ease;
+}
+.pin-dot.filled {
+  background: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 0 12px rgba(200,223,32,0.5);
+}
+.pin-error-msg {
+  font-family: var(--font-data);
+  font-size: 13px; color: var(--danger);
+  min-height: 20px; text-align: center;
+}
+
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  15% { transform: translateX(-10px); }
+  30% { transform: translateX(10px); }
+  45% { transform: translateX(-8px); }
+  60% { transform: translateX(8px); }
+  75% { transform: translateX(-5px); }
+  90% { transform: translateX(5px); }
+}
+.shake { animation: shake 0.45s ease; }
+
+.pin-keypad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px; width: 100%; max-width: 320px;
+}
+.pin-key {
+  background: var(--card);
+  border: 1.5px solid var(--border-bright);
+  color: var(--text);
+  border-radius: var(--radius);
+  height: 72px;
+  font-family: var(--font-head);
+  font-size: 28px; font-weight: 600;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.12s ease;
+  user-select: none;
+}
+.pin-key:active { background: var(--card-hover); transform: scale(0.93); }
+.pin-key.accent { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+.pin-key.accent:active { background: #afc41a; }
+.pin-key.danger { background: transparent; border-color: var(--danger); color: var(--danger); }
+.pin-key.empty { visibility: hidden; }
+
+/* ── REGISTER SELECT ─────────────────────── */
+.reg-cards {
+  padding: 20px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.reg-card {
+  background: var(--card);
+  border: 1.5px solid var(--border-bright);
+  border-radius: var(--radius);
+  padding: 22px 20px;
+  cursor: pointer;
+  display: flex; align-items: center; gap: 16px;
+  min-height: 80px;
+  transition: all 0.18s ease;
+  position: relative; overflow: hidden;
+}
+.reg-card::before {
+  content: ''; position: absolute;
+  left: 0; top: 0; bottom: 0; width: 4px;
+  background: var(--accent); opacity: 0; transition: opacity 0.18s;
+}
+.reg-card:active { background: var(--card-hover); }
+.reg-card:active::before { opacity: 1; }
+.reg-icon { font-size: 32px; flex-shrink: 0; width: 44px; text-align: center; }
+.reg-label {
+  font-family: var(--font-head);
+  font-size: 22px; font-weight: 600;
+  letter-spacing: 0.03em; flex: 1;
+}
+.reg-arrow { font-size: 20px; color: var(--accent); }
+
+/* ── VIEW SCREEN ─────────────────────────── */
+.tabs {
+  display: flex; background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto; flex-shrink: 0;
+  scrollbar-width: none;
+}
+.tabs::-webkit-scrollbar { display: none; }
+.tab {
+  padding: 14px 20px;
+  font-family: var(--font-head);
+  font-size: 15px; font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  cursor: pointer; white-space: nowrap;
+  border-bottom: 3px solid transparent;
+  transition: all 0.15s;
+  user-select: none;
+}
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+.date-range-bar {
+  display: none; padding: 14px 20px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  gap: 10px; align-items: center; flex-wrap: wrap;
+}
+.date-range-bar.visible { display: flex; }
+.date-range-bar input[type="date"] {
+  background: var(--card); border: 1px solid var(--border-bright);
+  color: var(--text); padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-data); font-size: 14px;
+  flex: 1; min-width: 130px;
+}
+.date-range-bar input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.7); }
+.btn-apply {
+  background: var(--accent); color: var(--bg);
+  border: none; border-radius: var(--radius-sm);
+  padding: 10px 20px;
+  font-family: var(--font-head); font-size: 16px; font-weight: 700;
+  cursor: pointer; white-space: nowrap;
+}
+.btn-apply:active { background: #afc41a; }
+
+.ledger-wrap {
+  flex: 1; overflow: auto;
+  padding: 16px 20px 100px;
+}
+
+.ledger-empty {
+  text-align: center; padding: 64px 24px;
+  color: var(--text-muted);
+}
+.ledger-empty-icon { font-size: 48px; margin-bottom: 16px; opacity: 0.4; }
+.ledger-empty-text {
+  font-family: var(--font-head);
+  font-size: 20px; font-weight: 600;
+}
+.ledger-empty-sub { font-size: 13px; margin-top: 6px; color: var(--text-muted); }
+
+.ledger-table {
+  width: 100%; border-collapse: collapse;
+  min-width: 500px;
+}
+.ledger-table th {
+  background: var(--surface);
+  font-family: var(--font-data);
+  font-size: 10px; font-weight: 600;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 10px 12px; text-align: left;
+  border-bottom: 2px solid var(--border-bright);
+  white-space: nowrap;
+  position: sticky; top: 0; z-index: 5;
+}
+.ledger-table td {
+  padding: 14px 12px;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-data); font-size: 13px;
+  vertical-align: middle;
+}
+.ledger-table tr:last-child td { border-bottom: none; }
+.ledger-table tbody tr { transition: background 0.12s; cursor: pointer; }
+.ledger-table tbody tr:active { background: var(--card); }
+.ledger-table tbody tr.locked { cursor: default; }
+
+.td-sr {
+  color: var(--accent); font-weight: 600;
+  font-size: 14px; white-space: nowrap;
+}
+.td-main { font-weight: 500; color: var(--text); }
+.td-time { color: var(--text-sub); white-space: nowrap; }
+.td-action { text-align: center; width: 40px; }
+.icon-edit { font-size: 18px; color: var(--accent); }
+.icon-lock { font-size: 16px; color: var(--text-muted); }
+
+.fab {
+  position: fixed; bottom: 28px; right: 24px;
+  width: 64px; height: 64px;
+  background: var(--accent);
+  color: var(--bg); border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 32px; font-weight: 300;
+  box-shadow: 0 4px 24px rgba(200,223,32,0.4);
+  cursor: pointer; z-index: 20;
+  transition: transform 0.15s, box-shadow 0.15s;
+  border: none;
+  line-height: 1;
+}
+.fab:active { transform: scale(0.92); box-shadow: 0 2px 12px rgba(200,223,32,0.3); }
+
+.export-wrap { position: relative; }
+.btn-export {
+  background: var(--card); border: 1px solid var(--border-bright);
+  color: var(--text); padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-head); font-size: 14px; font-weight: 600;
+  cursor: pointer; display: flex; align-items: center; gap: 6px;
+  white-space: nowrap;
+}
+.btn-export:active { background: var(--card-hover); }
+.export-menu {
+  display: none; position: absolute; right: 0; top: calc(100% + 8px);
+  background: var(--card);
+  border: 1px solid var(--border-bright);
+  border-radius: var(--radius-sm);
+  overflow: hidden; z-index: 30;
+  box-shadow: var(--shadow);
+  min-width: 140px;
+}
+.export-menu.open { display: block; }
+.export-item {
+  padding: 14px 18px;
+  font-family: var(--font-head); font-size: 16px; font-weight: 600;
+  cursor: pointer; display: flex; align-items: center; gap: 10px;
+  transition: background 0.12s;
+}
+.export-item:active { background: var(--card-hover); }
+.export-item:hover { background: var(--card-hover); }
+
+/* ── FORM SCREEN ─────────────────────────── */
+.form-body {
+  padding: 20px 20px 100px;
+  display: flex; flex-direction: column; gap: 20px;
+}
+.field-group { display: flex; flex-direction: column; gap: 8px; }
+.field-label {
+  font-family: var(--font-head);
+  font-size: 13px; font-weight: 600;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--text-sub);
+}
+.field-input-wrap { position: relative; display: flex; align-items: center; }
+.field-input {
+  width: 100%; background: var(--card);
+  border: 1.5px solid var(--border-bright);
+  color: var(--text); border-radius: var(--radius-sm);
+  padding: 16px 14px;
+  font-family: var(--font-data); font-size: 18px;
+  transition: border-color 0.15s;
+  -webkit-appearance: none;
+}
+.field-input:focus {
+  outline: none; border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(200,223,32,0.1);
+}
+.field-input::placeholder { color: var(--text-muted); font-size: 15px; }
+.field-input[type="time"] { cursor: pointer; }
+.field-input.with-cam { padding-right: 56px; }
+select.field-input { cursor: pointer; }
+select.field-input option { background: var(--card); }
+
+.cam-btn {
+  position: absolute; right: 10px;
+  background: var(--accent-dim); border: 1px solid var(--accent);
+  color: var(--accent); border-radius: var(--radius-sm);
+  width: 40px; height: 40px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; cursor: pointer;
+  transition: background 0.15s;
+}
+.cam-btn:active { background: rgba(200,223,32,0.25); }
+
+.btn-submit {
+  width: 100%; background: var(--accent);
+  color: var(--bg); border: none;
+  border-radius: var(--radius);
+  padding: 20px;
+  font-family: var(--font-head);
+  font-size: 22px; font-weight: 700;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.12s;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  margin-top: 8px;
+}
+.btn-submit:active { transform: scale(0.98); background: #afc41a; }
+.btn-submit:disabled { opacity: 0.5; cursor: default; }
+
+/* ── CAMERA MODAL ─────────────────────────── */
+#camera-modal {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.9);
+  display: none; flex-direction: column;
+  align-items: center; justify-content: center;
+  z-index: 100; padding: 20px;
+  gap: 20px;
+}
+#camera-modal.open { display: flex; }
+.cam-header {
+  font-family: var(--font-head);
+  font-size: 20px; font-weight: 700;
+  letter-spacing: 0.06em;
+}
+#cam-video {
+  width: 100%; max-width: 500px;
+  border-radius: var(--radius);
+  background: #000;
+  border: 2px solid var(--border-bright);
+  max-height: 55vh; object-fit: cover;
+}
+#cam-canvas { display: none; }
+.cam-guide {
+  font-size: 12px; color: var(--text-muted);
+  font-family: var(--font-data); text-align: center;
+}
+.cam-actions { display: flex; gap: 12px; width: 100%; max-width: 500px; }
+.btn-capture {
+  flex: 1; background: var(--accent); color: var(--bg);
+  border: none; border-radius: var(--radius);
+  padding: 18px; font-family: var(--font-head);
+  font-size: 20px; font-weight: 700;
+  cursor: pointer;
+}
+.btn-capture:active { background: #afc41a; }
+.btn-cam-close {
+  background: var(--card); border: 1px solid var(--border-bright);
+  color: var(--text); border-radius: var(--radius);
+  padding: 18px 22px; font-family: var(--font-head);
+  font-size: 20px; font-weight: 600;
+  cursor: pointer;
+}
+.cam-status {
+  font-family: var(--font-data); font-size: 14px;
+  color: var(--accent); min-height: 22px; text-align: center;
+}
+
+/* ── TOAST ─────────────────────────────── */
+#toast {
+  position: fixed; bottom: 110px; left: 50%; transform: translateX(-50%) translateY(20px);
+  background: var(--surface);
+  border: 1px solid var(--border-bright);
+  color: var(--text); border-radius: 40px;
+  padding: 12px 24px;
+  font-family: var(--font-data); font-size: 14px;
+  white-space: nowrap;
+  opacity: 0; pointer-events: none;
+  transition: all 0.25s ease;
+  z-index: 50;
+  box-shadow: var(--shadow);
+}
+#toast.show {
+  opacity: 1; transform: translateX(-50%) translateY(0);
+}
+#toast.error { border-color: var(--danger); color: var(--danger); }
+#toast.success { border-color: var(--success); color: var(--success); }
+
+/* ── SPINNER ─────────────────────────────── */
+.spinner {
+  display: inline-block;
+  width: 22px; height: 22px;
+  border: 3px solid rgba(0,0,0,0.3);
+  border-top-color: var(--bg);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── LOADING ─────────────────────────────── */
+.loading-row td {
+  text-align: center; padding: 40px;
+  color: var(--text-muted); font-family: var(--font-data); font-size: 13px;
+}
+
+/* ── SCROLLBAR ─────────────────────────────── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<!-- ══ HOME ══════════════════════════════════════════════════ -->
+<div id="screen-home" class="screen active">
+  <div class="home-hero">
+    <div class="home-logo">🏭</div>
+    <div class="home-title">WH GATE<br>REGISTER</div>
+    <div class="home-subtitle">Snitch Logistics · Security</div>
+  </div>
+  <div class="home-cards" id="home-cards">
+    <div class="wh-card" data-wh="WH1" onclick="selectWarehouse('WH1')">
+      <div class="wh-icon">🏢</div>
+      <div class="wh-info">
+        <div class="wh-name">WH 1</div>
+        <div class="wh-desc">Warehouse 1 — Outward &amp; Returns</div>
+      </div>
+      <div class="wh-arrow">›</div>
+    </div>
+    <div class="wh-card" data-wh="WH2" onclick="selectWarehouse('WH2')">
+      <div class="wh-icon">🏭</div>
+      <div class="wh-info">
+        <div class="wh-name">WH 2</div>
+        <div class="wh-desc">Warehouse 2 — Inward, Outward &amp; Material</div>
+      </div>
+      <div class="wh-arrow">›</div>
+    </div>
+    <div class="wh-card disabled">
+      <div class="wh-icon">🏗️</div>
+      <div class="wh-info">
+        <div class="wh-name">NORTH</div>
+        <div class="wh-desc">North Warehouse</div>
+      </div>
+      <div class="badge-soon">Coming Soon</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PIN ════════════════════════════════════════════════════ -->
+<div id="screen-pin" class="screen">
+  <div class="hdr">
+    <button class="btn-back" onclick="showScreen('screen-home')">‹</button>
+    <div class="hdr-title" id="pin-wh-name">Warehouse</div>
+  </div>
+  <div class="pin-wrap">
+    <div>
+      <div class="pin-warehouse-label">Enter PIN for</div>
+      <div class="pin-warehouse-name" id="pin-wh-label">—</div>
+    </div>
+    <div class="pin-dots" id="pin-dots">
+      <div class="pin-dot" id="dot-0"></div>
+      <div class="pin-dot" id="dot-1"></div>
+      <div class="pin-dot" id="dot-2"></div>
+      <div class="pin-dot" id="dot-3"></div>
+    </div>
+    <div class="pin-error-msg" id="pin-error"></div>
+    <div class="pin-keypad" id="pin-keypad">
+      <button class="pin-key" onclick="pinPress(1)">1</button>
+      <button class="pin-key" onclick="pinPress(2)">2</button>
+      <button class="pin-key" onclick="pinPress(3)">3</button>
+      <button class="pin-key" onclick="pinPress(4)">4</button>
+      <button class="pin-key" onclick="pinPress(5)">5</button>
+      <button class="pin-key" onclick="pinPress(6)">6</button>
+      <button class="pin-key" onclick="pinPress(7)">7</button>
+      <button class="pin-key" onclick="pinPress(8)">8</button>
+      <button class="pin-key" onclick="pinPress(9)">9</button>
+      <button class="pin-key danger" onclick="pinBack()">⌫</button>
+      <button class="pin-key" onclick="pinPress(0)">0</button>
+      <button class="pin-key accent" id="pin-submit" onclick="submitPin()">✓</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ REGISTERS ══════════════════════════════════════════════ -->
+<div id="screen-registers" class="screen">
+  <div class="hdr">
+    <button class="btn-back" onclick="logout()">‹</button>
+    <div class="hdr-title" id="reg-wh-name">Registers</div>
+  </div>
+  <div class="reg-cards" id="reg-cards"></div>
+</div>
+
+<!-- ══ VIEW ══════════════════════════════════════════════════ -->
+<div id="screen-view" class="screen">
+  <div class="hdr">
+    <button class="btn-back" onclick="showScreen('screen-registers')">‹</button>
+    <div class="hdr-title" id="view-reg-name">Register</div>
+    <div class="export-wrap">
+      <button class="btn-export" onclick="toggleExportMenu()">⬇ Export ▾</button>
+      <div class="export-menu" id="export-menu">
+        <div class="export-item" onclick="exportData('xlsx')">📊 Excel</div>
+        <div class="export-item" onclick="exportData('pdf')">📄 PDF</div>
+      </div>
+    </div>
+  </div>
+  <div class="tabs" id="view-tabs">
+    <div class="tab active" data-tab="today" onclick="switchTab('today')">TODAY</div>
+    <div class="tab" data-tab="d1" onclick="switchTab('d1')">YESTERDAY</div>
+    <div class="tab" data-tab="d2" onclick="switchTab('d2')">D-2</div>
+    <div class="tab" data-tab="range" onclick="switchTab('range')">DATE RANGE</div>
+  </div>
+  <div class="date-range-bar" id="range-bar">
+    <input type="date" id="range-from" placeholder="From">
+    <input type="date" id="range-to" placeholder="To">
+    <button class="btn-apply" onclick="applyRange()">Apply</button>
+  </div>
+  <div class="ledger-wrap">
+    <div style="overflow-x:auto;">
+      <table class="ledger-table">
+        <thead id="ledger-head"></thead>
+        <tbody id="ledger-body"></tbody>
+      </table>
+    </div>
+  </div>
+  <button class="fab" onclick="openForm(null)">+</button>
+</div>
+
+<!-- ══ FORM ══════════════════════════════════════════════════ -->
+<div id="screen-form" class="screen">
+  <div class="hdr">
+    <button class="btn-back" onclick="showScreen('screen-view')">‹</button>
+    <div class="hdr-title" id="form-title">New Entry</div>
+  </div>
+  <div class="form-body" id="form-body"></div>
+</div>
+
+<!-- ══ CAMERA MODAL ══════════════════════════════════════════ -->
+<div id="camera-modal">
+  <div class="cam-header">📷 Scan Vehicle Number</div>
+  <video id="cam-video" autoplay playsinline muted></video>
+  <canvas id="cam-canvas"></canvas>
+  <div class="cam-guide">Point camera at the number plate and tap Capture</div>
+  <div class="cam-status" id="cam-status"></div>
+  <div class="cam-actions">
+    <button class="btn-capture" onclick="captureOCR()">📸 Capture</button>
+    <button class="btn-cam-close" onclick="closeCamera()">✕ Close</button>
+  </div>
+</div>
+
+<!-- ══ TOAST ═════════════════════════════════════════════════ -->
+<div id="toast"></div>
+
+<script>
+// ── STATE ──────────────────────────────────────────────────────
+let currentWarehouse = null;
+let currentWarehouseLabel = '';
+let currentRegister = null;
+let currentToken = null;
+let entries = [];
+let editingEntry = null;
+let activeTab = 'today';
+let rangeFrom = '';
+let rangeTo = '';
+let warehouseConfig = [];
+let camStream = null;
+
+// ── INIT ───────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', async () => {
+  try {
+    const res = await fetch('/api/warehouses');
+    warehouseConfig = await res.json();
+  } catch(e) {
+    // fallback config if server not running
+    warehouseConfig = [
+      { id:'WH1', label:'Warehouse 1', registers:[
+        {type:'outward', label:'Outward Dispatch', icon:'🚛'},
+        {type:'returns', label:'Returns', icon:'↩️'}
+      ]},
+      { id:'WH2', label:'Warehouse 2', registers:[
+        {type:'inward', label:'Inward Receiving', icon:'📦'},
+        {type:'outward_local', label:'Outward Local', icon:'🚐'},
+        {type:'outward_outstation', label:'Outward Outstation', icon:'🚛'},
+        {type:'material', label:'Material Register', icon:'🗃️'}
+      ]},
+      { id:'NORTH', label:'North', registers:[], comingSoon:true }
+    ];
+  }
+
+  // Restore session
+  const savedWH = sessionStorage.getItem('wh_warehouse');
+  const savedToken = sessionStorage.getItem('wh_token');
+  if (savedWH && savedToken) {
+    const wh = warehouseConfig.find(w => w.id === savedWH);
+    if (wh) {
+      currentWarehouse = savedWH;
+      currentWarehouseLabel = wh.label;
+      currentToken = savedToken;
+      renderRegisters();
+      showScreen('screen-registers');
+      return;
+    }
+  }
+  showScreen('screen-home');
+});
+
+// ── SCREEN NAVIGATION ─────────────────────────────────────────
+function showScreen(id) {
+  const screens = document.querySelectorAll('.screen');
+  screens.forEach(s => {
+    if (s.id === id) {
+      s.classList.add('active');
+      s.classList.remove('slide-out');
+    } else {
+      s.classList.remove('active');
+    }
+  });
+  // Close export menu if open
+  document.getElementById('export-menu').classList.remove('open');
+}
+
+// ── WAREHOUSE SELECT ──────────────────────────────────────────
+function selectWarehouse(whId) {
+  const wh = warehouseConfig.find(w => w.id === whId);
+  if (!wh || wh.comingSoon) return;
+  currentWarehouse = whId;
+  currentWarehouseLabel = wh.label;
+  document.getElementById('pin-wh-name').textContent = wh.label;
+  document.getElementById('pin-wh-label').textContent = wh.label;
+  pinReset();
+  showScreen('screen-pin');
+}
+
+// ── PIN ────────────────────────────────────────────────────────
+let pinDigits = [];
+
+function pinReset() {
+  pinDigits = [];
+  updatePinDots();
+  document.getElementById('pin-error').textContent = '';
+}
+
+function pinPress(d) {
+  if (pinDigits.length >= 4) return;
+  pinDigits.push(d);
+  updatePinDots();
+  if (pinDigits.length === 4) setTimeout(submitPin, 120);
+}
+
+function pinBack() {
+  pinDigits.pop();
+  updatePinDots();
+  document.getElementById('pin-error').textContent = '';
+}
+
+function updatePinDots() {
+  for (let i = 0; i < 4; i++) {
+    document.getElementById(`dot-${i}`).classList.toggle('filled', i < pinDigits.length);
+  }
+}
+
+async function submitPin() {
+  if (pinDigits.length < 4) return;
+  const pin = pinDigits.join('');
+  try {
+    const res = await fetch('/api/auth', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ warehouse: currentWarehouse, pin })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      currentToken = data.token;
+      sessionStorage.setItem('wh_token', currentToken);
+      sessionStorage.setItem('wh_warehouse', currentWarehouse);
+      renderRegisters();
+      showScreen('screen-registers');
+    } else {
+      pinError();
+    }
+  } catch(e) {
+    pinError();
+  }
+}
+
+function pinError() {
+  pinDigits = [];
+  updatePinDots();
+  const dots = document.getElementById('pin-dots');
+  dots.classList.remove('shake');
+  void dots.offsetWidth;
+  dots.classList.add('shake');
+  document.getElementById('pin-error').textContent = 'Wrong PIN — try again';
+  setTimeout(() => dots.classList.remove('shake'), 500);
+}
+
+function logout() {
+  sessionStorage.removeItem('wh_token');
+  sessionStorage.removeItem('wh_warehouse');
+  currentToken = null;
+  currentWarehouse = null;
+  showScreen('screen-home');
+}
+
+// ── REGISTERS ─────────────────────────────────────────────────
+function renderRegisters() {
+  const wh = warehouseConfig.find(w => w.id === currentWarehouse);
+  document.getElementById('reg-wh-name').textContent = wh ? wh.label : currentWarehouse;
+  const container = document.getElementById('reg-cards');
+  container.innerHTML = wh.registers.map(r => `
+    <div class="reg-card" onclick="selectRegister('${r.type}','${r.label}','${r.icon}')">
+      <div class="reg-icon">${r.icon}</div>
+      <div class="reg-label">${r.label}</div>
+      <div class="reg-arrow">›</div>
+    </div>
+  `).join('');
+}
+
+function selectRegister(type, label, icon) {
+  currentRegister = { type, label, icon };
+  document.getElementById('view-reg-name').textContent = `${icon} ${label}`;
+  activeTab = 'today';
+  setTabActive('today');
+  document.getElementById('range-bar').classList.remove('visible');
+  loadEntries();
+  showScreen('screen-view');
+}
+
+// ── TABS ───────────────────────────────────────────────────────
+function switchTab(tab) {
+  activeTab = tab;
+  setTabActive(tab);
+  if (tab === 'range') {
+    document.getElementById('range-bar').classList.add('visible');
+  } else {
+    document.getElementById('range-bar').classList.remove('visible');
+    loadEntries();
+  }
+}
+
+function setTabActive(tab) {
+  document.querySelectorAll('.tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.tab === tab);
+  });
+}
+
+function applyRange() {
+  rangeFrom = document.getElementById('range-from').value;
+  rangeTo = document.getElementById('range-to').value;
+  if (!rangeFrom || !rangeTo) { showToast('Pick both From and To dates', 'error'); return; }
+  loadEntries();
+}
+
+// ── LOAD ENTRIES ──────────────────────────────────────────────
+function dateOffset(days) {
+  const d = new Date();
+  d.setDate(d.getDate() - days);
+  return d.toISOString().split('T')[0];
+}
+
+async function loadEntries() {
+  const tbody = document.getElementById('ledger-body');
+  tbody.innerHTML = `<tr class="loading-row"><td colspan="10">Loading…</td></tr>`;
+  renderLedgerHead();
+
+  let url = `/api/entries?warehouse=${currentWarehouse}&register_type=${currentRegister.type}`;
+  if (activeTab === 'today') url += `&date=${dateOffset(0)}`;
+  else if (activeTab === 'd1') url += `&date=${dateOffset(1)}`;
+  else if (activeTab === 'd2') url += `&date=${dateOffset(2)}`;
+  else if (activeTab === 'range' && rangeFrom && rangeTo) url += `&from=${rangeFrom}&to=${rangeTo}`;
+  else { tbody.innerHTML = ''; return; }
+
+  try {
+    const res = await fetch(url);
+    entries = await res.json();
+    renderLedger();
+  } catch(e) {
+    tbody.innerHTML = `<tr class="loading-row"><td colspan="10">Failed to load. Check connection.</td></tr>`;
+  }
+}
+
+// ── LEDGER COLUMNS CONFIG ──────────────────────────────────────
+const COLS = {
+  inward: [
+    {key:'company', label:'Company'}, {key:'invoice_no', label:'Invoice'},
+    {key:'material_type', label:'Material'}, {key:'box_count', label:'Boxes'},
+    {key:'vehicle_no', label:'Vehicle'}
+  ],
+  outward_local: [
+    {key:'company', label:'Company'}, {key:'vehicle_no', label:'Vehicle'},
+    {key:'box_count', label:'Boxes'}, {key:'driver_name', label:'Driver'}
+  ],
+  outward_outstation: [
+    {key:'store_name', label:'Store'}, {key:'vehicle_no', label:'Vehicle'},
+    {key:'box_count', label:'Boxes'}, {key:'quantity', label:'Qty'},
+    {key:'amount', label:'Amount'}
+  ],
+  material: [
+    {key:'item_desc', label:'Description'}, {key:'quantity', label:'Qty'}
+  ],
+  outward: [
+    {key:'company', label:'Company'}, {key:'vehicle_no', label:'Vehicle'},
+    {key:'box_count', label:'Boxes'}, {key:'driver_name', label:'Driver'}
+  ],
+  returns: [
+    {key:'courier_name', label:'Courier'}, {key:'agent_name', label:'Agent'},
+    {key:'awb_no', label:'AWB'}, {key:'vehicle_no', label:'Vehicle'},
+    {key:'quantity', label:'Qty'}
+  ]
+};
+
+function renderLedgerHead() {
+  const cols = COLS[currentRegister.type] || [];
+  const head = document.getElementById('ledger-head');
+  head.innerHTML = `<tr>
+    <th>SR</th>
+    ${cols.map(c => `<th>${c.label}</th>`).join('')}
+    <th>IN</th><th>OUT</th><th></th>
+  </tr>`;
+}
+
+function renderLedger() {
+  const tbody = document.getElementById('ledger-body');
+  if (!entries.length) {
+    tbody.innerHTML = '';
+    const wrap = document.querySelector('.ledger-wrap');
+    wrap.innerHTML = `<div class="ledger-empty">
+      <div class="ledger-empty-icon">📋</div>
+      <div class="ledger-empty-text">No entries yet</div>
+      <div class="ledger-empty-sub">Tap + to add a new entry</div>
+    </div>`;
+    return;
+  }
+
+  // Restore table if empty state was shown
+  const wrap = document.querySelector('.ledger-wrap');
+  if (!wrap.querySelector('table')) {
+    wrap.innerHTML = `<div style="overflow-x:auto;">
+      <table class="ledger-table">
+        <thead id="ledger-head"></thead>
+        <tbody id="ledger-body"></tbody>
+      </table>
+    </div>`;
+    renderLedgerHead();
+  }
+
+  const cols = COLS[currentRegister.type] || [];
+  const newTbody = document.getElementById('ledger-body');
+  const now = new Date();
+
+  newTbody.innerHTML = entries.map(e => {
+    const editable = now < new Date(e.shift_end);
+    const d = e.data || {};
+    return `<tr class="${editable?'':'locked'}" onclick="${editable?`openForm(${e.id})`:''}">
+      <td class="td-sr">#${e.sr_no}</td>
+      ${cols.map(c => `<td class="td-main">${d[c.key] || '—'}</td>`).join('')}
+      <td class="td-time">${e.in_time ? e.in_time.slice(0,5) : '—'}</td>
+      <td class="td-time">${e.out_time ? e.out_time.slice(0,5) : '—'}</td>
+      <td class="td-action">${editable ? '<span class="icon-edit">✏️</span>' : '<span class="icon-lock">🔒</span>'}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── FORM ───────────────────────────────────────────────────────
+const FIELDS = {
+  inward: [
+    {key:'company', label:'Company / Address', type:'text', placeholder:'e.g. Dream Shivera Pvt Ltd'},
+    {key:'invoice_no', label:'Invoice / Bill No', type:'text', placeholder:'e.g. INV-2026-001'},
+    {key:'material_type', label:'Material Type', type:'select', options:['Apparel','Packing Stock','Non-Tradeable','Other']},
+    {key:'box_count', label:'Box Count', type:'number', placeholder:'0'},
+    {key:'vehicle_no', label:'Vehicle No', type:'text', cam:true, placeholder:'e.g. HR55AK2077'},
+    {key:'driver_name', label:'Driver Name', type:'text', placeholder:'Driver name'},
+    {key:'mobile_no', label:'Mobile No', type:'tel', placeholder:'10-digit mobile'},
+    {key:'in_time', label:'IN Time', type:'time', isTime:true},
+    {key:'out_time', label:'OUT Time', type:'time'},
+    {key:'remarks', label:'Remarks', type:'text', placeholder:'Optional notes'}
+  ],
+  outward_local: [
+    {key:'company', label:'Company', type:'text', placeholder:'Company name'},
+    {key:'vehicle_no', label:'Vehicle No', type:'text', cam:true, placeholder:'e.g. KA01AB1234'},
+    {key:'box_count', label:'Box Count', type:'number', placeholder:'0'},
+    {key:'driver_name', label:'Driver Name', type:'text', placeholder:'Driver name'},
+    {key:'mobile_no', label:'Mobile No', type:'tel', placeholder:'10-digit mobile'},
+    {key:'in_time', label:'IN Time', type:'time', isTime:true},
+    {key:'out_time', label:'OUT Time', type:'time'}
+  ],
+  outward_outstation: [
+    {key:'store_name', label:'Store Name', type:'text', placeholder:'Store / destination'},
+    {key:'vehicle_no', label:'Vehicle No', type:'text', cam:true, placeholder:'e.g. MH12CD5678'},
+    {key:'box_count', label:'Box Count', type:'number', placeholder:'0'},
+    {key:'quantity', label:'Quantity', type:'number', placeholder:'0'},
+    {key:'amount', label:'Amount (₹)', type:'number', placeholder:'0'},
+    {key:'driver_name', label:'Driver Name', type:'text', placeholder:'Driver name'},
+    {key:'mobile_no', label:'Mobile No', type:'tel', placeholder:'10-digit mobile'},
+    {key:'in_time', label:'IN Time', type:'time', isTime:true},
+    {key:'out_time', label:'OUT Time', type:'time'}
+  ],
+  material: [
+    {key:'item_desc', label:'Item Description', type:'text', placeholder:'e.g. PVC Tape Box'},
+    {key:'quantity', label:'Quantity', type:'number', placeholder:'0'},
+    {key:'in_time', label:'IN Time', type:'time', isTime:true},
+    {key:'out_time', label:'OUT Time', type:'time'},
+    {key:'remarks', label:'Remarks', type:'text', placeholder:'Optional notes'}
+  ],
+  outward: [
+    {key:'company', label:'Company', type:'text', placeholder:'Company name'},
+    {key:'vehicle_no', label:'Vehicle No', type:'text', cam:true, placeholder:'e.g. KA05MN7890'},
+    {key:'box_count', label:'Box Count', type:'number', placeholder:'0'},
+    {key:'driver_name', label:'Driver Name', type:'text', placeholder:'Driver name'},
+    {key:'mobile_no', label:'Mobile No', type:'tel', placeholder:'10-digit mobile'},
+    {key:'in_time', label:'IN Time', type:'time', isTime:true},
+    {key:'out_time', label:'OUT Time', type:'time'}
+  ],
+  returns: [
+    {key:'courier_name', label:'Courier Name', type:'text', placeholder:'e.g. Delhivery'},
+    {key:'agent_name', label:'Agent Name', type:'text', placeholder:'Agent / person name'},
+    {key:'awb_no', label:'AWB No', type:'text', placeholder:'Airway bill number'},
+    {key:'vehicle_no', label:'Vehicle No', type:'text', cam:true, placeholder:'Vehicle number'},
+    {key:'quantity', label:'Quantity', type:'number', placeholder:'0'},
+    {key:'phone_no', label:'Phone No', type:'tel', placeholder:'Contact number'}
+  ]
+};
+
+function nowHHMM() {
+  const now = new Date();
+  return `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+}
+
+function openForm(entryId) {
+  if (entryId) {
+    editingEntry = entries.find(e => e.id === entryId) || null;
+  } else {
+    editingEntry = null;
+  }
+
+  const isEdit = !!editingEntry;
+  document.getElementById('form-title').textContent = isEdit
+    ? `Edit Entry #${editingEntry.sr_no}`
+    : 'New Entry';
+
+  const fields = FIELDS[currentRegister.type] || [];
+  const d = editingEntry ? (editingEntry.data || {}) : {};
+
+  const formBody = document.getElementById('form-body');
+  formBody.innerHTML = fields.map(f => {
+    let val = '';
+    if (f.isTime && !isEdit) val = nowHHMM();
+    else if (isEdit) {
+      if (f.key === 'in_time') val = editingEntry.in_time ? editingEntry.in_time.slice(0,5) : '';
+      else if (f.key === 'out_time') val = editingEntry.out_time ? editingEntry.out_time.slice(0,5) : '';
+      else val = d[f.key] || '';
+    }
+
+    const inputId = `field-${f.key}`;
+    let inputHtml = '';
+
+    if (f.type === 'select') {
+      inputHtml = `<select class="field-input" id="${inputId}">
+        <option value="">— Select —</option>
+        ${f.options.map(o => `<option value="${o}"${val===o?' selected':''}>${o}</option>`).join('')}
+      </select>`;
+    } else {
+      inputHtml = `<input
+        class="field-input${f.cam?' with-cam':''}"
+        id="${inputId}"
+        type="${f.type}"
+        placeholder="${f.placeholder||''}"
+        value="${val}"
+        ${f.type==='number'?'inputmode="numeric"':''}
+        ${f.type==='tel'?'inputmode="tel"':''}
+        autocomplete="off"
+      >`;
+    }
+
+    return `<div class="field-group">
+      <label class="field-label" for="${inputId}">${f.label}</label>
+      <div class="field-input-wrap">
+        ${inputHtml}
+        ${f.cam ? `<button class="cam-btn" type="button" onclick="openCamera('${inputId}')" title="Scan plate">📷</button>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+
+  // Submit button
+  formBody.insertAdjacentHTML('beforeend', `
+    <button class="btn-submit" id="btn-submit" onclick="submitForm()">
+      ${isEdit ? '💾 Save Changes' : '✚ Add Entry'}
+    </button>
+  `);
+
+  showScreen('screen-form');
+}
+
+async function submitForm() {
+  const fields = FIELDS[currentRegister.type] || [];
+  const data = {};
+  let in_time = null, out_time = null;
+
+  for (const f of fields) {
+    const el = document.getElementById(`field-${f.key}`);
+    if (!el) continue;
+    const val = el.value.trim();
+    if (f.key === 'in_time') in_time = val || null;
+    else if (f.key === 'out_time') out_time = val || null;
+    else data[f.key] = val;
+  }
+
+  const btn = document.getElementById('btn-submit');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div>';
+
+  try {
+    let res;
+    if (editingEntry) {
+      res = await fetch(`/api/entries/${editingEntry.id}`, {
+        method: 'PUT',
+        headers: {'Content-Type':'application/json','X-WH-Token':currentToken},
+        body: JSON.stringify({ warehouse: currentWarehouse, in_time, out_time, data })
+      });
+    } else {
+      res = await fetch('/api/entries', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json','X-WH-Token':currentToken},
+        body: JSON.stringify({ warehouse: currentWarehouse, register_type: currentRegister.type, in_time, out_time, data })
+      });
+    }
+
+    const result = await res.json();
+    if (res.ok) {
+      showToast(editingEntry ? 'Entry updated ✓' : 'Entry added ✓', 'success');
+      showScreen('screen-view');
+      loadEntries();
+    } else {
+      showToast(result.error || 'Failed to save', 'error');
+      btn.disabled = false;
+      btn.innerHTML = editingEntry ? '💾 Save Changes' : '✚ Add Entry';
+    }
+  } catch(e) {
+    showToast('Network error — try again', 'error');
+    btn.disabled = false;
+    btn.innerHTML = editingEntry ? '💾 Save Changes' : '✚ Add Entry';
+  }
+}
+
+// ── EXPORT ─────────────────────────────────────────────────────
+function toggleExportMenu() {
+  document.getElementById('export-menu').classList.toggle('open');
+}
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('.export-wrap')) {
+    document.getElementById('export-menu').classList.remove('open');
+  }
+});
+
+function exportData(format) {
+  document.getElementById('export-menu').classList.remove('open');
+  let from, to;
+  if (activeTab === 'today') { from = to = dateOffset(0); }
+  else if (activeTab === 'd1') { from = to = dateOffset(1); }
+  else if (activeTab === 'd2') { from = to = dateOffset(2); }
+  else if (activeTab === 'range' && rangeFrom && rangeTo) { from = rangeFrom; to = rangeTo; }
+  else { showToast('Select a date range first', 'error'); return; }
+
+  const url = `/api/entries/export?warehouse=${currentWarehouse}&register_type=${currentRegister.type}&from=${from}&to=${to}&format=${format}`;
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = '';
+  a.click();
+}
+
+// ── CAMERA OCR ─────────────────────────────────────────────────
+let camTargetInputId = null;
+
+async function openCamera(inputId) {
+  camTargetInputId = inputId;
+  document.getElementById('cam-status').textContent = '';
+  document.getElementById('camera-modal').classList.add('open');
+
+  try {
+    camStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment', width:{ideal:1280}, height:{ideal:720} }
+    });
+    document.getElementById('cam-video').srcObject = camStream;
+  } catch(e) {
+    document.getElementById('cam-status').textContent = 'Camera not available';
+  }
+}
+
+function closeCamera() {
+  if (camStream) {
+    camStream.getTracks().forEach(t => t.stop());
+    camStream = null;
+  }
+  document.getElementById('camera-modal').classList.remove('open');
+  document.getElementById('cam-video').srcObject = null;
+}
+
+async function captureOCR() {
+  const video = document.getElementById('cam-video');
+  const canvas = document.getElementById('cam-canvas');
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  canvas.getContext('2d').drawImage(video, 0, 0);
+
+  const status = document.getElementById('cam-status');
+  status.textContent = 'Reading plate…';
+
+  try {
+    const { data: { text } } = await Tesseract.recognize(canvas, 'eng', {
+      logger: () => {}
+    });
+
+    // Extract vehicle number pattern (Indian format: AA00AA0000 or AA00A0000)
+    const raw = text.toUpperCase().replace(/[^A-Z0-9]/g, ' ').replace(/\s+/g, ' ').trim();
+    const match = raw.match(/[A-Z]{2}\s*\d{1,2}\s*[A-Z]{1,3}\s*\d{4}/);
+    const plate = match ? match[0].replace(/\s/g, '') : raw.slice(0, 20).trim();
+
+    if (plate) {
+      document.getElementById(camTargetInputId).value = plate;
+      status.textContent = `✓ Got: ${plate}`;
+      setTimeout(closeCamera, 1200);
+    } else {
+      status.textContent = 'Could not read — type manually or try again';
+    }
+  } catch(e) {
+    status.textContent = 'OCR failed — type manually';
+  }
+}
+
+// ── TOAST ──────────────────────────────────────────────────────
+let toastTimer = null;
+function showToast(msg, type='') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = `show ${type}`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.className = ''; }, 2800);
+}
+</script>
+</body>
+</html>
